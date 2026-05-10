@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Erik Michelson
+//
+// SPDX-License-Identifier: MIT
+
 package apds9960
 
 import (
