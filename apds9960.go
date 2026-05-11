@@ -12,8 +12,6 @@ import (
 	"periph.io/x/conn/v3/i2c"
 )
 
-const I2CAddr = 0x39
-
 const (
 	GESTURE_NONE = iota
 	GESTURE_UP
@@ -40,7 +38,8 @@ func (g Gesture) String() string {
 }
 
 type Options struct {
-	IntPin gpio.PinIO
+	I2cAddr uint16
+	IntPin  gpio.PinIO
 }
 
 type APDS9960 struct {
@@ -50,9 +49,6 @@ type APDS9960 struct {
 	gestureEnabled     bool
 	proximityEnabled   bool
 	colorEnabled       bool
-	gestureIn          bool
-	gestureDirectionX  int
-	gestureDirectionY  int
 	gestureDirInX      int
 	gestureDirInY      int
 	gestureSensitivity int
@@ -61,9 +57,11 @@ type APDS9960 struct {
 
 func New(bus i2c.Bus, opts *Options) (*APDS9960, error) {
 	if opts == nil {
-		opts = &Options{}
+		opts = &Options{
+			I2cAddr: 0x39,
+		}
 	}
-	d := &i2c.Dev{Addr: I2CAddr, Bus: bus}
+	d := &i2c.Dev{Addr: opts.I2cAddr, Bus: bus}
 	return &APDS9960{
 		dev:                d,
 		intPin:             opts.IntPin,
@@ -99,10 +97,10 @@ func (a *APDS9960) Begin() error {
 	if err := a.setGestureMode(true); err != nil {
 		return err
 	}
-	if err := a.enablePower(); err != nil {
+	if err := a.EnablePower(); err != nil {
 		return err
 	}
-	if err := a.enableWait(); err != nil {
+	if err := a.EnableWait(); err != nil {
 		return err
 	}
 
@@ -117,15 +115,15 @@ func (a *APDS9960) Begin() error {
 
 	time.Sleep(10 * time.Millisecond)
 
-	if err := a.enablePower(); err != nil {
+	if err := a.EnablePower(); err != nil {
 		return err
 	}
 
-	if err := a.enableProximity(); err != nil {
+	if err := a.EnableProximity(); err != nil {
 		return err
 	}
 
-	if err := a.enableGesture(); err != nil {
+	if err := a.EnableGesture(); err != nil {
 		return err
 	}
 
@@ -165,7 +163,7 @@ func (a *APDS9960) SetGestureSensitivity(sensitivity uint8) {
 
 func (a *APDS9960) GestureAvailable() bool {
 	if !a.gestureEnabled {
-		if err := a.enableGesture(); err != nil {
+		if err := a.EnableGesture(); err != nil {
 			return false
 		}
 	}
@@ -197,7 +195,7 @@ func (a *APDS9960) ReadGesture() Gesture {
 }
 
 func (a *APDS9960) ColorAvailable() bool {
-	if err := a.enableColor(); err != nil {
+	if err := a.EnableColor(); err != nil {
 		return false
 	}
 
@@ -220,15 +218,14 @@ func (a *APDS9960) ReadColor() (r, g, b, c int, err error) {
 	g = int(uint16(colors[5])<<8 | uint16(colors[4]))
 	b = int(uint16(colors[7])<<8 | uint16(colors[6]))
 
-	_ = a.disableColor()
-
-	return r, g, b, c, nil
+	_ = a.DisableColor()
+	return
 }
 
 func (a *APDS9960) ReadColorNormalized() (r, g, b, c float64, err error) {
 	ri, gi, bi, ci, err := a.ReadColor()
 	if err != nil {
-		return 0, 0, 0, 0, err
+		return
 	}
 	maxSensorValue := 3072.0 // (256 - ATIME) * 1024, ATIME=253 -> max=3072
 	if ri > 0 {
@@ -243,11 +240,11 @@ func (a *APDS9960) ReadColorNormalized() (r, g, b, c float64, err error) {
 	if ci > 0 {
 		c = float64(ci) / maxSensorValue
 	}
-	return r, g, b, c, nil
+	return
 }
 
 func (a *APDS9960) ProximityAvailable() bool {
-	if err := a.enableProximity(); err != nil {
+	if err := a.EnableProximity(); err != nil {
 		return false
 	}
 
@@ -259,15 +256,17 @@ func (a *APDS9960) ProximityAvailable() bool {
 	return (r & 0b00000010) != 0
 }
 
-func (a *APDS9960) ReadProximity() (int, error) {
+func (a *APDS9960) ReadProximity() (prox int, err error) {
 	var r uint8
-	if err := a.getPDATA(&r); err != nil {
-		return -1, err
+	prox = -1
+	if err = a.getPDATA(&r); err != nil {
+		return
 	}
 
-	_ = a.disableProximity()
+	_ = a.DisableProximity()
 
-	return int(255 - r), nil
+	prox = int(255 - r)
+	return
 }
 
 func (a *APDS9960) setGestureIntEnable(en bool) error {
@@ -296,7 +295,7 @@ func (a *APDS9960) setGestureMode(en bool) error {
 	return a.setGCONF4(r)
 }
 
-func (a *APDS9960) enablePower() error {
+func (a *APDS9960) EnablePower() error {
 	var r uint8
 	if err := a.getENABLE(&r); err != nil {
 		return err
@@ -308,7 +307,7 @@ func (a *APDS9960) enablePower() error {
 	return a.setENABLE(r)
 }
 
-func (a *APDS9960) disablePower() error {
+func (a *APDS9960) DisablePower() error {
 	var r uint8
 	if err := a.getENABLE(&r); err != nil {
 		return err
@@ -320,7 +319,7 @@ func (a *APDS9960) disablePower() error {
 	return a.setENABLE(r)
 }
 
-func (a *APDS9960) enableColor() error {
+func (a *APDS9960) EnableColor() error {
 	var r uint8
 	if err := a.getENABLE(&r); err != nil {
 		return err
@@ -335,7 +334,7 @@ func (a *APDS9960) enableColor() error {
 	return res
 }
 
-func (a *APDS9960) disableColor() error {
+func (a *APDS9960) DisableColor() error {
 	var r uint8
 	if err := a.getENABLE(&r); err != nil {
 		return err
@@ -354,7 +353,7 @@ func (a *APDS9960) disableColor() error {
 	return res
 }
 
-func (a *APDS9960) enableProximity() error {
+func (a *APDS9960) EnableProximity() error {
 	var r uint8
 	if err := a.getENABLE(&r); err != nil {
 		return err
@@ -369,7 +368,7 @@ func (a *APDS9960) enableProximity() error {
 	return res
 }
 
-func (a *APDS9960) disableProximity() error {
+func (a *APDS9960) DisableProximity() error {
 	var r uint8
 	if err := a.getENABLE(&r); err != nil {
 		return err
@@ -388,7 +387,7 @@ func (a *APDS9960) disableProximity() error {
 	return res
 }
 
-func (a *APDS9960) enableWait() error {
+func (a *APDS9960) EnableWait() error {
 	var r uint8
 	if err := a.getENABLE(&r); err != nil {
 		return err
@@ -400,7 +399,7 @@ func (a *APDS9960) enableWait() error {
 	return a.setENABLE(r)
 }
 
-func (a *APDS9960) disableWait() error {
+func (a *APDS9960) DisableWait() error {
 	var r uint8
 	if err := a.getENABLE(&r); err != nil {
 		return err
@@ -412,7 +411,7 @@ func (a *APDS9960) disableWait() error {
 	return a.setENABLE(r)
 }
 
-func (a *APDS9960) enableGesture() error {
+func (a *APDS9960) EnableGesture() error {
 	var r uint8
 	if err := a.getENABLE(&r); err != nil {
 		return err
@@ -427,7 +426,7 @@ func (a *APDS9960) enableGesture() error {
 	return res
 }
 
-func (a *APDS9960) disableGesture() error {
+func (a *APDS9960) DisableGesture() error {
 	var r uint8
 	if err := a.getENABLE(&r); err != nil {
 		return err
@@ -541,12 +540,13 @@ func (a *APDS9960) write(reg, val uint8) error {
 	return a.dev.Tx([]byte{reg, val}, nil)
 }
 
-func (a *APDS9960) read(reg uint8) (uint8, error) {
+func (a *APDS9960) read(reg uint8) (val uint8, err error) {
 	buf := make([]byte, 1)
-	if err := a.dev.Tx([]byte{reg}, buf); err != nil {
-		return 0, err
+	if err = a.dev.Tx([]byte{reg}, buf); err != nil {
+		return
 	}
-	return buf[0], nil
+	val = buf[0]
+	return
 }
 
 func (a *APDS9960) readBlock(reg uint8, val []byte) int {
