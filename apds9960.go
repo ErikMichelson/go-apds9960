@@ -1,4 +1,5 @@
-// SPDX-FileCopyrightText: 2026 Erik Michelson
+// SPDX-FileCopyrightText: 2026 Erik Michelson for the modified Go port
+// SPDX-FileCopyrightText: 2012 Adafruit Industries for the original C++ source code
 //
 // SPDX-License-Identifier: MIT
 
