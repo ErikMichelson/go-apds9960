@@ -6,7 +6,6 @@ package apds9960
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"periph.io/x/conn/v3/gpio"
@@ -195,26 +194,6 @@ func (a *APDS9960) ReadGesture() Gesture {
 	g := a.detectedGesture
 	a.detectedGesture = GESTURE_NONE
 	return g
-}
-
-func (a *APDS9960) GestureFIFOAvailableDebug() int {
-	return a.gestureFIFOAvailable()
-}
-
-func (a *APDS9960) ReadGestureFIFODebug(count int) []byte {
-	buf := make([]byte, count*4)
-	a.readBlock(0xFC, buf)
-	return buf
-}
-
-func (a *APDS9960) DumpGestureRegisters() {
-	var r uint8
-	a.getGSTATUS(&r)
-	fmt.Printf("GSTATUS: 0x%02x\n", r)
-	a.getGFLVL(&r)
-	fmt.Printf("GFLVL: 0x%02x\n", r)
-	a.getENABLE(&r)
-	fmt.Printf("ENABLE: 0x%02x\n", r)
 }
 
 func (a *APDS9960) ColorAvailable() bool {

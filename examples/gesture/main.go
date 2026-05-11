@@ -44,29 +44,11 @@ func main() {
 	fmt.Println("Gestures: UP, DOWN, LEFT, RIGHT")
 	fmt.Println()
 
-	runNormal(sensor)
-}
-
-func runNormal(sensor *apds9960.APDS9960) {
 	for {
 		if sensor.GestureAvailable() {
 			g := sensor.ReadGesture()
 			fmt.Printf("Gesture: %s\n", g)
 		}
 		time.Sleep(50 * time.Millisecond)
-	}
-}
-
-func runDebug(sensor *apds9960.APDS9960) {
-	for {
-		avail := sensor.GestureFIFOAvailableDebug()
-		fmt.Printf("FIFO available: %d\n", avail)
-		if avail > 0 {
-			data := sensor.ReadGestureFIFODebug(avail)
-			fmt.Printf("FIFO data (%d bytes): %v\n", len(data), data)
-		}
-		sensor.DumpGestureRegisters()
-		fmt.Println("---")
-		time.Sleep(100 * time.Millisecond)
 	}
 }
