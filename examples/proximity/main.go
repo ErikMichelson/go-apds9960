@@ -5,7 +5,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"time"
@@ -17,8 +16,6 @@ import (
 )
 
 func main() {
-	flag.Parse()
-
 	if _, err := driverreg.Init(); err != nil {
 		log.Fatal(err)
 	}
