@@ -25,6 +25,12 @@ make
 ./example-gesture-int
 ```
 
+## Gesture sensor
+
+This library uses a different algorithm for gesture detection compared to the original upstream library.
+While testing with the original algorithm, the sensor had a stronger bias for detecting UP gesture while this approach
+results in more balanced results. 
+
 ## License
 
 The library is licensed under MIT.
