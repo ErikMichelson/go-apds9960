@@ -44,19 +44,19 @@ type Options struct {
 }
 
 type APDS9960 struct {
-	dev   *i2c.Dev
+	dev    *i2c.Dev
 	intPin gpio.PinIO
 
-	gestureEnabled bool
-	proximityEnabled bool
-	colorEnabled bool
-	gestureIn bool
-	gestureDirectionX int
-	gestureDirectionY int
-	gestureDirInX int
-	gestureDirInY int
+	gestureEnabled     bool
+	proximityEnabled   bool
+	colorEnabled       bool
+	gestureIn          bool
+	gestureDirectionX  int
+	gestureDirectionY  int
+	gestureDirInX      int
+	gestureDirInY      int
 	gestureSensitivity int
-	detectedGesture Gesture
+	detectedGesture    Gesture
 }
 
 func New(bus i2c.Bus, opts *Options) (*APDS9960, error) {
@@ -65,10 +65,10 @@ func New(bus i2c.Bus, opts *Options) (*APDS9960, error) {
 	}
 	d := &i2c.Dev{Addr: I2CAddr, Bus: bus}
 	return &APDS9960{
-		dev: d,
-		intPin: opts.IntPin,
+		dev:                d,
+		intPin:             opts.IntPin,
 		gestureSensitivity: 50,
-		detectedGesture: GESTURE_NONE,
+		detectedGesture:    GESTURE_NONE,
 	}, nil
 }
 
@@ -230,18 +230,18 @@ func (a *APDS9960) ReadColorNormalized() (r, g, b, c float64, err error) {
 	if err != nil {
 		return 0, 0, 0, 0, err
 	}
-	max := 3072.0 // (256 - ATIME) * 1024, ATIME=253 -> max=3072
+	maxSensorValue := 3072.0 // (256 - ATIME) * 1024, ATIME=253 -> max=3072
 	if ri > 0 {
-		r = float64(ri) / max
+		r = float64(ri) / maxSensorValue
 	}
 	if gi > 0 {
-		g = float64(gi) / max
+		g = float64(gi) / maxSensorValue
 	}
 	if bi > 0 {
-		b = float64(bi) / max
+		b = float64(bi) / maxSensorValue
 	}
 	if ci > 0 {
-		c = float64(ci) / max
+		c = float64(ci) / maxSensorValue
 	}
 	return r, g, b, c, nil
 }
@@ -331,7 +331,7 @@ func (a *APDS9960) enableColor() error {
 	}
 	r |= 0b00000010
 	res := a.setENABLE(r)
-	a.colorEnabled = (res == nil)
+	a.colorEnabled = res == nil
 	return res
 }
 
@@ -365,7 +365,7 @@ func (a *APDS9960) enableProximity() error {
 	}
 	r |= 0b00000100
 	res := a.setENABLE(r)
-	a.proximityEnabled = (res == nil)
+	a.proximityEnabled = res == nil
 	return res
 }
 
@@ -423,7 +423,7 @@ func (a *APDS9960) enableGesture() error {
 	}
 	r |= 0b01000000
 	res := a.setENABLE(r)
-	a.gestureEnabled = (res == nil)
+	a.gestureEnabled = res == nil
 	return res
 }
 
@@ -477,7 +477,7 @@ func (a *APDS9960) handleGesture() {
 		var sawHigh bool
 		var prevU int
 
-		for i := 0; i+3 < int(bytesRead); i += 4 {
+		for i := 0; i+3 < bytesRead; i += 4 {
 			u := int(fifoData[i])
 			d := int(fifoData[i+1])
 			l := int(fifoData[i+2])
